@@ -31,6 +31,8 @@ function qz_zoom:initialize()
   self.userData = loadUserData()
   CheckSetDefaultValue(self, "userData", "table", {})
 
+  CheckSetDefaultValue(self.userData, "key", "string", "(unbound)")
+
   CheckSetDefaultValue(self.userData, "default_fov", "number", consoleGetVariable("r_fov"))
   CheckSetDefaultValue(self.userData, "default_sens", "number", consoleGetVariable("m_speed"))
 
@@ -51,6 +53,44 @@ function qz_zoom:drawOptions(x, y)
   local user = self.userData
 
   y = y + 20
+  ---------------
+  ---------------
+	DrawOptionsHeader("Input", x, y, -5, 560);
+  y = y + 40
+
+  local k = nil
+  local key = string.upper(user.key)
+
+	uiLabel("Zoom Key", x, y)
+	k = inputGrabRegion(x + sliderStart, y+3, 100, 30, "game")
+
+  local strCol
+  if k.focus then
+    strCol = Color(190, 40, 10, 190)
+  else strCol = Color(22,22,22,190)
+  end
+
+
+  nvgBeginPath()
+  nvgRoundedRect(x + sliderStart, y+3, 100, 30, 3)
+  nvgFillColor(Color(62,63,67,255))
+  nvgStrokeColor(strCol)
+  nvgFill()
+  nvgStroke()
+
+	-- text
+	nvgFontSize(20);
+	nvgFontFace(FONT_TEXT);
+	nvgFillColor(Color(142,142,142,255));
+	nvgTextAlign(NVG_ALIGN_LEFT, NVG_ALIGN_MIDDLE);
+	nvgText(x+sliderStart+5, y+30/2+3, key);
+
+  if k.nameKeyPressed ~= nil then
+    user.key = k.nameKeyPressed
+  end
+
+  y = y + 40
+
   ---------------
   ---------------
 	DrawOptionsHeader("FOV", x, y, -5, 560);
@@ -118,6 +158,7 @@ function qz_zoom:draw()
 
   local default_sens = self.userData.default_sens
   local sens_mult = self.userData.sens_mult
+  local nextSens
 
   local animate = self.userData.animate
 
@@ -139,9 +180,11 @@ function qz_zoom:draw()
   if widgetGetConsoleVariable("bind") == 1 then
     next_fov = lerp(next_fov, zoom_fov, speed)
     next_fov = math.floor(next_fov)
+    nextSens = zoom_sens
   else
     next_fov = lerp(next_fov, default_fov, speed)
     next_fov = math.ceil(next_fov)
+    nextSens = default_sens
   end
 
   if curr_fov >= default_fov then zoomed = false
@@ -149,9 +192,9 @@ function qz_zoom:draw()
   end
 
   if zoomed then
-    consolePerformCommand("bind game space m_speed " .. default_sens .. "; ui_qz_zoom_bind 0")
+    consolePerformCommand("bind game " .. self.userData.key .. " ui_qz_zoom_bind 0")
   else
-    consolePerformCommand("bind game space m_speed " .. zoom_sens .. "; ui_qz_zoom_bind 1")
+    consolePerformCommand("bind game " .. self.userData.key .. " ui_qz_zoom_bind 1")
   end
 
   if DEBUG then
@@ -165,5 +208,6 @@ function qz_zoom:draw()
   end
 
   consolePerformCommand("r_fov " .. next_fov);
+  consolePerformCommand("m_speed " .. nextSens);
 
 end
